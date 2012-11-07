@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Oggetto Web extension for Magento
+ *
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade
+ * the Oggetto Assist module to newer versions in the future.
+ * If you wish to customize the Oggetto Assist module for your needs
+ * please refer to http://www.magentocommerce.com for more information.
+ *
+ * @category   Oggetto
+ * @package    Oggetto_Assist
+ * @copyright  Copyright (C) 2012 Oggetto Web ltd (http://oggettoweb.com/)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+-->
+<config>
+    <global>
+        <models>
+            <assist>
+                <class>Oggetto_Assist_Model</class>
+            </assist>
+        </models>
+        <blocks>
+            <assist>
+                <class>Oggetto_Assist_Block</class>
+            </assist>
+        </blocks>
+        <resources>
+            <assist_setup>
+                <setup>
+                    <module>Oggetto_Assist</module>
+                </setup>
+                <connection>
+                    <use>core_setup</use>
+                </connection>
+            </assist_setup>
+            <assist_write>
+                <connection>
+                    <use>core_write</use>
+                </connection>
+            </assist_write>
+            <assist_read>
+                <connection>
+                    <use>core_read</use>
+                </connection>
+            </assist_read>
+        </resources>
+        <helpers>
+            <assist>
+                <class>Oggetto_Assist_Helper</class>
+            </assist>
+        </helpers>
+    </global>
+
+    <frontend>
+        <secure_url>
+            <assist_redirect>/assist/redirect/</assist_redirect>
+        </secure_url>
+        <routers>
+            <assist>
+                <use>standard</use>
+                <args>
+                    <module>Oggetto_Assist</module>
+                    <frontName>assist</frontName>
+                </args>
+            </assist>
+        </routers>
+        <translate>
+            <modules>
+                <Oggetto_Assist>
+                    <files>
+                        <default>Oggetto_Assist.csv</default>
+                    </files>
+                </Oggetto_Assist>
+            </modules>
+        </translate>
+    </frontend>
+
+    <adminhtml>
+        <translate>
+            <modules>
+                <Oggetto_Assist>
+                    <files>
+                        <default>Oggetto_Assist.csv</default>
+                    </files>
+                </Oggetto_Assist>
+            </modules>
+        </translate>
+    </adminhtml>
+
+    <default>
+        <payment>
+            <assist>
+                <version>1.2.4</version>
+                <active>0</active>
+                <model>assist/payment</model>
+                <title>Assist</title>
+                <developer_mode>1</developer_mode>
+                <assist_debug_result>AS000</assist_debug_result>
+                <assist_currency_code>RUB</assist_currency_code>
+                <assist_language>ru</assist_language>
+                <assist_payment_methods>CardPayment,WebMoneyPayment,PayCashPayment,QiwiBeelinePayment,AssistIDCCPayment,YandexMoneyPayment</assist_payment_methods>
+                <order_status>pending</order_status>
+            </assist>
+        </payment>
+    </default>
+</config>
