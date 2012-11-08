@@ -63,10 +63,7 @@ class Oggetto_Assist_RedirectController extends Mage_Core_Controller_Front_Actio
             if ($payment->isValidRequest($this->getRequest())) {
                 $payment->updateOrderStatus($orderId, (strtoupper($responseCode) == 'AS000'));
             }
-            if ($payment->getConfigData('developer_mode')) {
-                Mage::log('post', null, 'assist_payment.log');
-                Mage::log($this->getRequest()->getParams(), null, 'assist_payment.log');
-            }
+            $payment->debugData($this->getRequest()->getParams());
         }
     }
 

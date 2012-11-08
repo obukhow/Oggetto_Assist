@@ -248,7 +248,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function getAssistUrl()
     {
-        return ($this->getConfigData('developer_mode'))
+        return ($this->getDebugFlag())
             ? self::ASSIST_URL_DEBUG
             : self::ASSIST_URL;
     }
@@ -327,7 +327,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
             );
             $this->_addCustomerBillingAddress($order, $fields);
 
-            if ($this->getConfigData('developer_mode')) {
+            if ($this->getDebugFlag()) {
                 $fields['DemoResult'] = $this->getConfigData('assist_debug_result');
                 $fields['TestMode']   = 1;
             }

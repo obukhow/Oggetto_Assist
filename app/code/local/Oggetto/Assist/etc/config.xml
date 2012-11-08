@@ -115,7 +115,7 @@
                 <active>1</active>
                 <model>assist/payment</model>
                 <title>Assist</title>
-                <developer_mode>1</developer_mode>
+                <debug>1</debug>
                 <assist_debug_result>AS000</assist_debug_result>
                 <assist_currency_code>RUB</assist_currency_code>
                 <assist_language>ru</assist_language>

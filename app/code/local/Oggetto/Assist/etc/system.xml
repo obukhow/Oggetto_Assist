@@ -116,7 +116,7 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </order_status_no>
-                        <developer_mode translate="label">
+                        <debug translate="label">
                             <label>Developer mode</label>
                             <comment>Developer mode also enables demo mode.</comment>
                             <frontend_type>select</frontend_type>
@@ -125,7 +125,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
-                        </developer_mode>
+                        </debug>
                         <assist_debug_result translate="label">
                             <label>Debug Result</label>
                             <comment>Which result should return Assist in demo mode.</comment>
