@@ -61,6 +61,16 @@
                 <class>Oggetto_Assist_Helper</class>
             </assist>
         </helpers>
+        <events>
+            <sales_order_payment_cancel>
+                <observers>
+                    <cancel_assist_order>
+                        <class>assist/observer</class>
+                        <method>cancelAssistOrder</method>
+                    </cancel_assist_order>
+                </observers>
+            </sales_order_payment_cancel>
+        </events>
     </global>
 
     <frontend>
@@ -102,8 +112,7 @@
     <default>
         <payment>
             <assist>
-                <version>1.2.4</version>
-                <active>0</active>
+                <active>1</active>
                 <model>assist/payment</model>
                 <title>Assist</title>
                 <developer_mode>1</developer_mode>

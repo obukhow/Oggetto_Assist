@@ -33,8 +33,6 @@
  */
 class Oggetto_Assist_Block_Redirect extends Mage_Core_Block_Abstract
 {
-    private $_anew = false;
-
     /**
      * Render form
      *
@@ -64,7 +62,7 @@ class Oggetto_Assist_Block_Redirect extends Mage_Core_Block_Abstract
             ->setUseContainer(true);
 
         $html = '<html><body>';
-        $html .= iconv('UTF-8', WP_GatewayAssist_Model_Checkout::ASSIST_POST_CHARSET,
+        $html .= iconv('UTF-8', Oggetto_Assist_Model_Payment::ASSIST_POST_CHARSET,
             $this->__('You will be redirected to Assist in a few seconds.'));
         $html .= '<br />';
         $html .= $form->toHtml();
@@ -73,18 +71,5 @@ class Oggetto_Assist_Block_Redirect extends Mage_Core_Block_Abstract
         $html .= '</body></html>';
 
         return $html;
-    }
-
-    /**
-     * Set anew parameter
-     *
-     * @param bool $value value
-     *
-     * @return Oggetto_Assist_Block_Redirect
-     */
-    public function setAnew($value)
-    {
-        $this->_anew = $value;
-        return $this;
     }
 }

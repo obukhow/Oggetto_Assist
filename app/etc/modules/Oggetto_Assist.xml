@@ -27,7 +27,7 @@
     <modules>
         <Oggetto_Assist>
             <active>true</active>
-            <codePool>community</codePool>
+            <codePool>local</codePool>
             <depends>
                 <Mage_Payment />
             </depends>

@@ -33,6 +33,11 @@
  */
 class Oggetto_Assist_Model_Source_TestResponseCode
 {
+    /**
+     * Return array of options
+     *
+     * @return array
+     */
     public function toOptionArray()
     {
         return array(

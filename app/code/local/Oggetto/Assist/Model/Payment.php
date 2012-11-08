@@ -32,13 +32,24 @@
  */
 class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
 {
-    const ASSIST_URL            = 'https://payments.paysecure.ru/pay/order.cfm';
-    const ASSIST_URL_DEBUG      = 'https://payments.paysecure.ru/pay/order.cfm';
-    const ASSIST_POST_CHARSET   = 'UTF-8';
+    const ASSIST_URL             = 'https://payments.paysecure.ru/pay/order.cfm';
+    const ASSIST_URL_DEBUG       = 'https://payments.paysecure.ru/pay/order.cfm';
 
-    protected $_code          = 'assist';
-    protected $_formBlockType = 'assist/form';
-    protected $_infoBlockType = 'assist/info';
+    const ASSIST_CANCEL_URL      = 'https://payments.paysecure.ru/cancel/cancel.cfm';
+    const ASSIST_POST_CHARSET    = 'UTF-8';
+
+    const SELLER_REJECTION       = 1;
+    const CUSTOMER_REJECTION     = 2;
+
+    const ASSIST_RESPONSE_FORMAT_XML = '3';
+
+    protected $_code                   = 'assist';
+    protected $_formBlockType          = 'assist/form';
+    protected $_infoBlockType          = 'assist/info';
+    protected $_canUseForMultishipping = false;
+    protected $_canRefund              = true;
+    protected $_canVoid                = true;
+    protected $_isGateway              = true;
 
     public $assistLanguageCode = array(
         'ru' => 'RU',
@@ -223,13 +234,11 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
     /**
      * Get order place redirect url
      *
-     * @param boolean $anew anew flag
-     *
      * @return void
      */
-    public function getOrderPlaceRedirectUrl($anew = false)
+    public function getOrderPlaceRedirectUrl()
     {
-        return Mage::getUrl('assist/redirect', array('_secure' => true, '_query' => array('anew' => $anew)));
+        return Mage::getUrl('assist/redirect', array('_secure' => true));
     }
 
     /**
@@ -239,7 +248,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function getAssistUrl()
     {
-        return (Mage::getStoreConfigFlag('payment/assist/developer_mode'))
+        return ($this->getConfigData('developer_mode'))
             ? self::ASSIST_URL_DEBUG
             : self::ASSIST_URL;
     }
@@ -251,7 +260,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function getSuccessUrl()
     {
-        return Mage::getUrl('checkout/onepage/success', array('_secure' => true));
+        return Mage::getUrl('assist/redirect/success', array('_secure' => true));
     }
 
     /**
@@ -261,7 +270,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function getFailureUrl()
     {
-        return Mage::getUrl('checkout/onepage/failure', array('_secure' => true));
+        return Mage::getUrl('assist/redirect/failure', array('_secure' => true));
     }
 
     /**
@@ -277,37 +286,35 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
     /**
      * Get checkout form fields
      *
-     * @param boolean $anew anew flag
-     *
      * @return array
      */
-    public function getAssistCheckoutFormFields($anew = false)
+    public function getAssistCheckoutFormFields()
     {
-        $orderId = $this->getOrderId($anew);
-        $config = Mage::getStoreConfig('payment/assist');
         try {
-            $payment = explode(',', $config['assist_payment_methods']);
+
+            $orderId = $this->getOrderId();
+            if (!$this->getConfigData('shop_id')) {
+                Mage::throwException(Mage::helper('assist')->__('Invalid Assist Shop ID.'));
+            }
+            $payment = explode(',', $this->getConfigData('assist_payment_methods'));
             $payment = array_flip($payment);
-
-            $order = Mage::getModel('sales/order');
-            $order->loadByIncrementId($orderId);
-
-            $billing = $order->getBillingAddress();
+            $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
 
             $amount = $order->getGrandTotal();
             $currencyCode = $order->getOrderCurrencyCode();
             if (!isset($this->assistCurrencyCode[$currencyCode])) {
                 $amount = Mage::helper('directory')
-                    ->currencyConvert($amount, $currencyCode, $config['assist_currency_code']);
-                $currencyCode = $config['assist_currency_code'];
+                    ->currencyConvert($amount, $currencyCode, $this->getConfigData('assist_currency_code'));
+                $currencyCode = $this->getConfigData('assist_currency_code');
             }
 
             $lang = $this->getCurrentLanguage();
             if (!isset($this->assistLanguageCode[$lang])) {
-                $lang = $config['assist_language'];
+                $lang = $this->getConfigData('assist_language');
             }
+
             $fields = array(
-                'Merchant_ID'   => $config['shop_id'],
+                'Merchant_ID'   => $this->getConfigData('shop_id'),
                 'OrderNumber'   => $orderId,
                 'OrderAmount'   => sprintf('%.2f', $amount),
                 'OrderCurrency' => $this->assistCurrencyCode[$currencyCode],
@@ -315,33 +322,222 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 'Delay'         => 0,
                 'URL_RETURN_OK' => $this->getSuccessUrl(),
                 'URL_RETURN_NO' => $this->getFailureUrl(),
-                'OrderComment'  => iconv('UTF-8', self::ASSIST_POST_CHARSET,
-                        Mage::helper('assist')->__('Payment for order #%d', $orderId)),
-                'LastName'      => iconv('UTF-8', self::ASSIST_POST_CHARSET, $billing->getFirstname()),
-                'FirstName'     => iconv('UTF-8', self::ASSIST_POST_CHARSET, $billing->getLastname()),
+                'OrderComment'  => Mage::helper('assist')->__('Payment for order #%d', $orderId),
                 'Email'         => $order->getCustomerEmail(),
-                'MobilePhone'   => $billing->getTelephone(),
-                'Address'       => iconv('UTF-8', self::ASSIST_POST_CHARSET, $billing->getStreet(1)),
-                'Country'       => $billing->getCountry(),
-                'State'         => iconv('UTF-8', self::ASSIST_POST_CHARSET, $billing->getRegion()),
-                'City'          => iconv('UTF-8', self::ASSIST_POST_CHARSET, $billing->getCity()),
-                'Zip'           => $billing->getPostcode(),
             );
+            $this->_addCustomerBillingAddress($order, $fields);
 
-            if (Mage::getStoreConfig('payment/assist/developer_mode')) {
-                $fields['DemoResult']   = Mage::getStoreConfig('payment/assist/assist_debug_result');
-                $fields['TestMode']     = 1;
-            }
-
-
-            if (!$fields['Merchant_ID']) {
-                Mage::throwException(Mage::helper('assist')->__('Invalid Assist Shop ID.'));
+            if ($this->getConfigData('developer_mode')) {
+                $fields['DemoResult'] = $this->getConfigData('assist_debug_result');
+                $fields['TestMode']   = 1;
             }
 
             return $fields;
         } catch (Exception $e) {
             Mage::logException($e);
-            return array('OrderNumber' => $orderId);
+            return array('OrderNumber' => $this->getOrderId());
+        }
+    }
+
+    /**
+     * Add billing address to fields
+     *
+     * @param Mage_Sales_Model_Order $order   order
+     * @param array                  &$fields fields array
+     * 
+     * @return void
+     */
+    protected function _addCustomerBillingAddress($order, &$fields)
+    {
+        if ($billing = $order->getBillingAddress()) {
+            $address = array (
+                    'Lastname'      => $billing->getFirstname(),
+                    'Firstname'     => $billing->getLastname(),
+                    'MobilePhone'   => $billing->getTelephone(),
+                    'Address'       => $billing->getStreet(1),
+                    'Country'       => $billing->getCountry(),
+                    'State'         => $billing->getRegion(),
+                    'City'          => $billing->getCity(),
+                    'Zip'           => $billing->getPostcode(),
+                );
+            $fields = array_merge($fields, $address);
+        }
+        return;
+    }
+
+    /**
+     * Check order id is valid
+     *
+     * @param int $orderId int
+     *
+     * @return boolean
+     */
+    public function isValidOrderId($orderId)
+    {
+        $order = Mage::getModel('sales/order');
+        $order->loadByIncrementId($orderId);
+
+        return (bool) $order->getId();
+    }
+
+    /**
+     * Update order status
+     *
+     * @param int  $orderId order id
+     * @param bool $isOk    success flag
+     *
+     * @return bool
+     */
+    public function updateOrderStatus($orderId, $isOk)
+    {
+        $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+
+        if ($isOk) {
+            $status = $this->getConfigData('order_status_ok');
+        } else {
+            $status = $this->getConfigData('order_status_no');
+        }
+
+        if ($status == 'pending') {
+            $status = Mage_Sales_Model_Order::STATE_NEW;
+        }
+
+        if ($this->isValidStatus($status, $order)) {
+            $order->setState($status, true)->save();
+            return true;
+        }
+    }
+
+    /**
+     * Check is valid order status
+     *
+     * @param string                 $status status
+     * @param Mage_Sales_Model_Order $order  order
+     *
+     * @return boolean
+     */
+    public function isValidStatus($status, $order)
+    {
+        switch ($status)
+        {
+            case Mage_Sales_Model_Order::STATE_NEW:
+            case Mage_Sales_Model_Order::STATE_PROCESSING:
+                return true;
+                break;
+            case Mage_Sales_Model_Order::STATE_CANCELED:
+                return $order->canCancel();
+                break;
+            case Mage_Sales_Model_Order::STATE_HOLDED:
+                return $order->canHold();
+                break;
+        }
+        return false;
+    }
+
+    /**
+     * Check confirm request
+     *
+     * @param Mage_Core_Controller_Request_Http $request request
+     *
+     * @return boolean
+     */
+    public function isValidRequest($request)
+    {
+        $orderId        = $request->getParam('OrderNumber');
+        $shopId         = $request->getParam('Merchant_ID', $request->getParam('Shop_IDP'));
+        $orderTotal     = $request->getParam('Total', $request->getParam('OrderAmount'));
+        $orderCurrency  = $request->getParam('OrderCurrency', $request->getParam('Currency'));
+        $checkValue     = $request->getParam('CheckValue');
+        $responseCode   = $request->getParam('Response_Code');
+        $check          = strtoupper(md5($shopId . $orderId . $orderTotal . $orderCurrency .
+                                $this->getConfigData('secret_word')));
+        return ($this->isValidOrderId($orderId)
+            && $shopId == $this->getConfigData('shop_id')
+            && $orderTotal && $orderCurrency
+            && $checkValue
+            && $responseCode
+            && $check == strtoupper($checkValue)
+        );
+    }
+
+    /**
+     * Cancel order
+     *
+     * @param Mage_Sales_Order_Payment $payment payment
+     *
+     * @return void
+     */
+    public function cancel(Varien_Object $payment)
+    {
+        $client = new Zend_Http_Client();
+        $client->setUri(self::ASSIST_CANCEL_URL)
+            ->setMethod(Zend_Http_Client::POST)
+            ->setParameterPost('Billnumber', $payment->getAdditionalInformation('Billnumber'))
+            ->setParameterPost('Merchant_ID', $this->getConfigData('shop_id'))
+            ->setParameterPost('Login', $this->getConfigData('login'))
+            ->setParameterPost('Password', $this->getConfigData('password'))
+            ->setParameterPost('CancelReason', $this->_getCancelReasonCode())
+            ->setParameterPost('Language', $this->getConfigData('assist_language'))
+            ->setParameterPost('Format', self::ASSIST_RESPONSE_FORMAT_XML);
+        $this->_processResponse($client->request());
+    }
+
+    /**
+     * Get assist cancel reason code
+     *
+     * @return int
+     */
+    protected function _getCancelReasonCode()
+    {
+        return (Mage::app()->getStore()->getId() == Mage_Core_Model_App::ADMIN_STORE_ID)
+            ? self::SELLER_REJECTION
+            : self::CUSTOMER_REJECTION;
+
+    }
+
+    /**
+     * Refund specified amount for payment
+     *
+     * @param Mage_Sales_Order_Payment $payment payment object
+     * @param float                    $amount  amount to refund
+     *
+     * @return Mage_Payment_Model_Abstract
+     */
+    public function refund(Varien_Object $payment, $amount)
+    {
+
+        $order = $payment->getOrder();
+        $client = new Zend_Http_Client();
+        $client->setUri(self::ASSIST_CANCEL_URL)
+            ->setMethod(Zend_Http_Client::POST)
+            ->setParameterPost('Billnumber', $payment->getAdditionalInformation('Billnumber'))
+            ->setParameterPost('Merchant_ID', $this->getConfigData('shop_id'))
+            ->setParameterPost('Login', $this->getConfigData('login'))
+            ->setParameterPost('Password', $this->getConfigData('password'))
+            ->setParameterPost('CancelReason', $this->_getCancelReasonCode())
+            ->setParameterPost('Language', $this->getConfigData('assist_language'))
+            ->setParameterPost('Amount', $amount)
+            ->setParameterPost('Currency', $order->getOrderCurrencyCode())
+            ->setParameterPost('Format', self::ASSIST_RESPONSE_FORMAT_XML);
+        $this->_processResponse($client->request());
+
+        return $this;
+    }
+
+    /**
+     * Process xml response
+     *
+     * @param Zend_Http_Response $response response
+     *
+     * @return void
+     */
+    protected function _processResponse($response)
+    {
+        $xml = new SimpleXMLElement($response->getBody());
+        foreach ($xml->attributes() as $attributeName => $value) {
+            if (strpos($attributeName, 'code') !== false && $value != 0) {
+                Mage::throwException('Where has been an error while processing your order');
+            }
         }
     }
 }

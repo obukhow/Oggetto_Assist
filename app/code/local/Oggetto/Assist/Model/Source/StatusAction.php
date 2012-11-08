@@ -40,6 +40,11 @@ class Oggetto_Assist_Model_Source_StatusAction
         Mage_Sales_Model_Order::STATE_HOLDED,
     );
 
+    /**
+     * Return array of options
+     *
+     * @return array
+     */
     public function toOptionArray()
     {
         if ($this->_stateStatuses) {

@@ -2,7 +2,6 @@
 /**
  * Oggetto Web extension for Magento
  *
- *
  * NOTICE OF LICENSE
  *
  * This source file is subject to the Open Software License (OSL 3.0)
@@ -19,40 +18,31 @@
  *
  * @category   Oggetto
  * @package    Oggetto_Assist
- * @copyright  Copyright (C) 2012 Oggetto Web ltd (http://oggettoweb.com/)
+ * @copyright  Copyright (C) 2012 
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
 /**
- * Assist payment method model
+ * Assist payment module observer
  *
  * @category   Oggetto
  * @package    Oggetto_Assist
  * @subpackage Model
- * @author     Denis Obukhov <denis.obukhov@oggettoweb.com>
+ * @author     
  */
-class Oggetto_Assist_Model_Source_Currency
+class Oggetto_Assist_Model_Observer extends Mage_Core_Model_Abstract
 {
-    protected $_options;
-
     /**
-     * Return array of options
+     * Cancel assist order
      *
-     * @return array
+     * @param Varien_Event_Observer $observer obsever
+     *
+     * @return void
      */
-    public function toOptionArray()
+    public function cancelAssistOrder(Varien_Event_Observer $observer)
     {
-        if (!$this->_options) {
-            $opts = Mage::app()->getLocale()->getOptionCurrencies();
-            $assistCurrencyCode = Mage::getModel('assist/payment')->assistCurrencyCode;
-            $this->_options = array();
-            foreach ($opts as $opt) {
-                if (isset($assistCurrencyCode[$opt['value']])) {
-                    $this->_options[] = $opt;
-                }
-            }
+        if ($observer->getPayment()->getMethodInstance()->getCode() == 'assist') {
+            Mage::getModel('assist/payment')->cancel($observer->getPayment());
         }
-        $options = $this->_options;
-        return $options;
     }
 }
