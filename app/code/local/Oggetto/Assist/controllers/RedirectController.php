@@ -57,13 +57,20 @@ class Oggetto_Assist_RedirectController extends Mage_Core_Controller_Front_Actio
     public function confirmAction()
     {
         if ($this->getRequest()->isPost()) {
-            $payment        = $this->getPaymentModel();
-            $orderId        = $this->getRequest()->getParam('OrderNumber');
-            $responseCode   = $this->getRequest()->getParam('Response_Code');
-            if ($payment->isValidRequest($this->getRequest())) {
-                $payment->updateOrderStatus($orderId, (strtoupper($responseCode) == 'AS000'));
+            $paymentModel   = $this->getPaymentModel();
+            $orderId        = $this->getRequest()->getParam('ordernumber');
+            $responseCode   = $this->getRequest()->getParam('responsecode');
+            $order          = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+
+            $paymentModel->debugData($paymentModel->isValidRequest($this->getRequest()));
+            if ($paymentModel->isValidRequest($this->getRequest()) && $order->getId()) {
+                $payment = $order->getPayment();
+                $this->getPaymentModel()->authorizeOrder($order, $this->getRequest()->getParam('billnumber'));
+                $payment->setTransactionAdditionalInfo($this->getRequest()->getPost(), true);
+                $paymentModel->updateOrderStatus($orderId, (strtoupper($responseCode) == 'AS000'));
             }
-            $payment->debugData($this->getRequest()->getParams());
+
+            $paymentModel->debugData($this->getRequest()->getParams());
         }
     }
 
@@ -87,9 +94,7 @@ class Oggetto_Assist_RedirectController extends Mage_Core_Controller_Front_Actio
         if ($orderId = $this->getRequest()->getParam('ordernumber')) {
             $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
             if ($order->getId()) {
-                $order->getPayment()
-                    ->setAdditionalInformation('Billnumber', $this->getRequest()->getParam('billnumber'))
-                    ->save();
+                $this->getPaymentModel()->authorizeOrder($order, $this->getRequest()->getParam('billnumber'));
             }
         }
         $this->_redirect('checkout/onepage/success', array('_secure' => true));

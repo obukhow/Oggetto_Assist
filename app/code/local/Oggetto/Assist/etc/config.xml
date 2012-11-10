@@ -95,6 +95,15 @@
                 </Oggetto_Assist>
             </modules>
         </translate>
+        <enterprise>
+            <websiterestriction>
+                <full_action_names>
+                    <generic>
+                        <assist_redirect_confirm/>
+                    </generic>
+                </full_action_names>
+            </websiterestriction>
+        </enterprise>
     </frontend>
 
     <adminhtml>
@@ -119,8 +128,9 @@
                 <assist_debug_result>AS000</assist_debug_result>
                 <assist_currency_code>RUB</assist_currency_code>
                 <assist_language>ru</assist_language>
-                <assist_payment_methods>CardPayment,WebMoneyPayment,PayCashPayment,QiwiBeelinePayment,AssistIDCCPayment,YandexMoneyPayment</assist_payment_methods>
+                <assist_payment_methods>CardPayment,WMPayment,PayCashPayment,QIWIPayment,QIWIBeelinePayment,QIWIMegafonPayment,QIWIMtsPayment,AssistIDPayment,YMPayment,GifteryPayment,BankClientPayment</assist_payment_methods>
                 <order_status>pending</order_status>
+                <order_status_ok>processing</order_status_ok>
             </assist>
         </payment>
     </default>

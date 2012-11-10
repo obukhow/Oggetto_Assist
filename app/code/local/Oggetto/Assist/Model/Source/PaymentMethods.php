@@ -42,11 +42,17 @@ class Oggetto_Assist_Model_Source_PaymentMethods
     {
         return array(
             array('value' => 'CardPayment', 'label' => Mage::helper('assist')->__('Credit Card')),
-            array('value' => 'WebMoneyPayment', 'label' => Mage::helper('assist')->__('WebMoney Transfer')),
+            array('value' => 'WMPayment', 'label' => Mage::helper('assist')->__('WebMoney Transfer')),
             array('value' => 'PayCashPayment', 'label' => Mage::helper('assist')->__('PayCash')),
-            array('value' => 'QiwiBeelinePayment', 'label' => Mage::helper('assist')->__('QIWI')),
-            array('value' => 'AssistIDCCPayment', 'label' => Mage::helper('assist')->__('Assist®ID')),
-            array('value' => 'YandexMoneyPayment', 'label' => Mage::helper('assist')->__('YandexMoney')),
+            array('value' => 'QIWIPayment', 'label' => Mage::helper('assist')->__('QIWI Payment')),
+            array('value' => 'QIWIBeelinePayment', 'label' => Mage::helper('assist')->__('QIWI Beeline Payment')),
+            array('value' => 'QIWIMegafonPayment', 'label' => Mage::helper('assist')->__('QIWI Megafon Payment')),
+            array('value' => 'QIWIMtsPayment', 'label' => Mage::helper('assist')->__('QIWI MTS Payment')),
+            array('value' => 'AssistIDPayment', 'label' => Mage::helper('assist')->__('Assist®ID')),
+            array('value' => 'YMPayment', 'label' => Mage::helper('assist')->__('YandexMoney')),
+            array('value' => 'GifteryPayment', 'label' => Mage::helper('assist')->__('Giftery Sertificate')),
+            array('value' => 'BankClientPayment',
+                'label' => Mage::helper('assist')->__('The Saint Petersburg Bank or SofortBanking client')),
         );
     }
 }

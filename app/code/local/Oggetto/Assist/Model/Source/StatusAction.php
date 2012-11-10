@@ -35,6 +35,7 @@ class Oggetto_Assist_Model_Source_StatusAction
 {
     protected $_stateStatuses = array(
         Mage_Sales_Model_Order::STATE_NEW,
+        Mage_Sales_Model_Order::STATE_COMPLETE,
         Mage_Sales_Model_Order::STATE_PROCESSING,
         Mage_Sales_Model_Order::STATE_CANCELED,
         Mage_Sales_Model_Order::STATE_HOLDED,

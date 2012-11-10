@@ -47,6 +47,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected $_formBlockType          = 'assist/form';
     protected $_infoBlockType          = 'assist/info';
     protected $_canUseForMultishipping = false;
+    protected $_canAuthorize           = true;
     protected $_canRefund              = true;
     protected $_canVoid                = true;
     protected $_isGateway              = true;
@@ -296,8 +297,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if (!$this->getConfigData('shop_id')) {
                 Mage::throwException(Mage::helper('assist')->__('Invalid Assist Shop ID.'));
             }
-            $payment = explode(',', $this->getConfigData('assist_payment_methods'));
-            $payment = array_flip($payment);
+
             $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
 
             $amount = $order->getGrandTotal();
@@ -326,6 +326,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 'Email'         => $order->getCustomerEmail(),
             );
             $this->_addCustomerBillingAddress($order, $fields);
+            $this->_addDisabledPayments($fields);
 
             if ($this->getDebugFlag()) {
                 $fields['DemoResult'] = $this->getConfigData('assist_debug_result');
@@ -366,6 +367,28 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
     }
 
     /**
+     * Add disabled payments
+     * 
+     * @param array &$fields fields array
+     * 
+     * @return void
+     */
+    protected function _addDisabledPayments(&$fields)
+    {
+        $allowedPayments = $this->getConfigData('assist_payment_methods');
+        $allowedPayments = array_flip(explode(',', $allowedPayments));
+        $options = Mage::getModel('assist/source_paymentMethods')->toOptionArray();
+        $disabledPayments = array();
+        foreach ($options as $option) {
+            if (!array_key_exists($option['value'], $allowedPayments)) {
+                $disabledPayments[$option['value']] = 0;
+            }
+        }
+        $fields = array_merge($fields, $disabledPayments);
+        return;
+    }
+
+    /**
      * Check order id is valid
      *
      * @param int $orderId int
@@ -394,6 +417,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
         if ($isOk) {
             $status = $this->getConfigData('order_status_ok');
+            $this->payInvoice($order->getPayment(), $order->getBaseGrandTotal());
         } else {
             $status = $this->getConfigData('order_status_no');
         }
@@ -443,17 +467,21 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function isValidRequest($request)
     {
-        $orderId        = $request->getParam('OrderNumber');
-        $shopId         = $request->getParam('Merchant_ID', $request->getParam('Shop_IDP'));
-        $orderTotal     = $request->getParam('Total', $request->getParam('OrderAmount'));
-        $orderCurrency  = $request->getParam('OrderCurrency', $request->getParam('Currency'));
-        $checkValue     = $request->getParam('CheckValue');
-        $responseCode   = $request->getParam('Response_Code');
-        $check          = strtoupper(md5($shopId . $orderId . $orderTotal . $orderCurrency .
-                                $this->getConfigData('secret_word')));
+        $shopId         = $request->getParam('merchant_id');
+        $orderId        = $request->getParam('ordernumber');
+        $orderAmount    = $request->getParam('amount');
+        $orderCurrency  = $request->getParam('currency');
+        $orderState     = $request->getParam('orderstate');
+        $checkValue     = $request->getParam('checkvalue');
+        $responseCode   = $request->getParam('responsecode');
+        $check          = strtoupper(
+                            md5(
+                                strtoupper(md5($this->getConfigData('secret_word'))) .
+                                strtoupper(md5($shopId . $orderId . $orderAmount . $orderCurrency . $orderState))
+                            ));
         return ($this->isValidOrderId($orderId)
             && $shopId == $this->getConfigData('shop_id')
-            && $orderTotal && $orderCurrency
+            && $orderAmount && $orderCurrency
             && $checkValue
             && $responseCode
             && $check == strtoupper($checkValue)
@@ -463,7 +491,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
     /**
      * Cancel order
      *
-     * @param Mage_Sales_Order_Payment $payment payment
+     * @param Mage_Sales_Model_Order_Payment $payment payment
      *
      * @return void
      */
@@ -539,5 +567,45 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 Mage::throwException('Where has been an error while processing your order');
             }
         }
+    }
+
+    /**
+     * Create invoice and pay
+     *
+     * @param Mage_Sales_Model_Order_Payment $payment payment
+     * @param float                          $amount  amount
+     *
+     * @return Mage_Payment_Model_Abstract
+     */
+    public function payInvoice(Varien_Object $payment, $amount)
+    {
+        $payment->registerCaptureNotification($amount);
+        return $this;
+    }
+
+    /**
+     * Authorize order
+     *
+     * @param Mage_Sales_Model_Order $order         order
+     * @param string                 $transactionId request
+     *
+     * @return void
+     */
+    public function authorizeOrder($order, $transactionId)
+    {
+        $payment = $order->getPayment();
+        if (strpos($transactionId, '.') !== false) {
+            $transactionId = explode('.', $transactionId);
+            $transactionId = $transactionId[0];
+        }
+        if ($payment->lookupTransaction($transactionId, Mage_Sales_Model_Order_Payment_Transaction::TYPE_AUTH)) {
+            return $this;
+        }
+        $payment->setTransactionId($transactionId);
+        $payment->authorize(true, $order->getBaseGrandTotal());
+        $payment->setAdditionalInformation('Billnumber', $transactionId)
+            ->save();
+        $order->save();
+        return $this;
     }
 }
