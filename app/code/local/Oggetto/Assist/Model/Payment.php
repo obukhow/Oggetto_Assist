@@ -352,8 +352,8 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
     {
         if ($billing = $order->getBillingAddress()) {
             $address = array (
-                    'Lastname'      => $billing->getFirstname(),
-                    'Firstname'     => $billing->getLastname(),
+                    'Firstname'     => $billing->getFirstname(),
+                    'Lastname'      => $billing->getLastname(),
                     'MobilePhone'   => $billing->getTelephone(),
                     'Address'       => $billing->getStreet(1),
                     'Country'       => $billing->getCountry(),
