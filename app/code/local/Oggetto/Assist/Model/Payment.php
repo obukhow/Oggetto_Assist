@@ -497,8 +497,12 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function cancel(Varien_Object $payment)
     {
+        if (!$payment->getAdditionalInformation('Billnumber')) {
+            return;
+        }
         $client = new Zend_Http_Client();
         $client->setUri(self::ASSIST_CANCEL_URL)
+            ->setConfig(array('ssltransport' => 'tls'))
             ->setMethod(Zend_Http_Client::POST)
             ->setParameterPost('Billnumber', $payment->getAdditionalInformation('Billnumber'))
             ->setParameterPost('Merchant_ID', $this->getConfigData('shop_id'))
@@ -538,6 +542,7 @@ class Oggetto_Assist_Model_Payment extends Mage_Payment_Model_Method_Abstract
         $client = new Zend_Http_Client();
         $client->setUri(self::ASSIST_CANCEL_URL)
             ->setMethod(Zend_Http_Client::POST)
+            ->setConfig(array('ssltransport' => 'tls'))
             ->setParameterPost('Billnumber', $payment->getAdditionalInformation('Billnumber'))
             ->setParameterPost('Merchant_ID', $this->getConfigData('shop_id'))
             ->setParameterPost('Login', $this->getConfigData('login'))
